@@ -150,9 +150,9 @@ export class Jet {
     }
 
     // set allowed origins, otherwise will default to all
-    if (!('Access-Control-Allow-Origin' in this.headers) || 'cors' in config) {
-      this._setHeaders({ 'Access-Control-Allow-Origin': '*' });
-    }
+    // if (!('Access-Control-Allow-Origin' in this.headers) || 'cors' in config) {
+    //   this._setHeaders({ 'Access-Control-Allow-Origin': '*' });
+    // }
     // set the default content-type to application/json if non was provided
     if (!('Content-Type' in this.headers)) {
       this._setHeaders({ 'Content-Type': 'application/json' });

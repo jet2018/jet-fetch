@@ -36,4 +36,12 @@ test('post request secured', () => {
 test('token is attached', () => {
   jet.token = 'mysampletokenhere';
   expect(jet.attachAuthorisation()).toBeInstanceOf(Object);
+  expect(jet.token).toBeDefined();
+});
+
+/**
+ * test if given a token, it gets added to the headers
+ */
+test('Check that cors are removed well', () => {
+  expect(jet._getHeaders()).not.toContain('Access-Control-Allow-Origin');
 });
