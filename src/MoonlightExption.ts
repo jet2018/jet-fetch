@@ -1,0 +1,1 @@
+class MoonLightError extends Error {}

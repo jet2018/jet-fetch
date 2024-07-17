@@ -422,4 +422,74 @@ export class Jet {
       return Promise.reject(e);
     }
   }
+
+  async checkPioniaStatusForVersion(versionName: string = 'v1/') {
+    if (!this.baseUrl?.includes(versionName)) {
+      return this.get(versionName);
+    }
+    return this.get();
+  }
+
+  /**
+   * Helper for making requests that conform to the moonlight pattern.
+   * Moonlight pattern does not require the user to provide the full url, but only the SERVICE and ACTION
+   * 
+   * @example ```js
+   * try {
+   *  const resData = await jet.moonlightRequest({ 
+   *      SERVICE: 'auth',
+   *      ACTION: 'login',
+   *      email: 'johndoe@somedomain.com',
+   *      password: 'password'
+   *  }, 'v1/');
+   * 
+   *  console.log(resData); // { returnCode: 0, returnMessage: 'Logged in Successful', returnData: { token: 'somejwt' }, ...anyOtherData }
+   * } catch (MoonLightError error) {
+   *     toast.error(error);
+   * }
+   * ```
+   * @see [Moonlight Pattern](https://pionia.netlify.app/moonlight/introduction-to-moonlight-architecture/)
+   * @param _data the data we are sending to the server, including both the SERVICE and ACTION
+   * @param targetVersion The version of the api we are targetting. Defaults to v1/. Must end with a slash as well as at ther server side.
+   * @returns response data from the server. This object will contain the returnCode, returnMessage, returnData and any other data that the server will return
+   */
+  async moonlightRequest(_data = {}, targetVersion = 'v1/', extraHeaders = {}) {
+    try {
+      if (!_data.hasOwnProperty('SERVICE') || !_data.hasOwnProperty('ACTION')) {
+        throw new MoonLightError('You must provide both the SERVICE and ACTION in the data object');
+      }
+      const response = await this.post(targetVersion, _data, extraHeaders);
+      const { data } = response;
+      const { returnCode, returnMessage } = data;
+      if (returnCode !== 0) {
+        throw new MoonLightError(returnMessage);
+      }
+      return data;
+    } catch (error: any) {
+      throw new MoonLightError(error);
+    }
+  }
+
+  /**
+   * Similar to moonlightRequest, but this one is secure, meaning it will attach the token to the request
+   * @param _data the data we are sending to the server, including both the SERVICE and ACTION
+   * @param targetVersion The version of the api we are targetting. Defaults to v1/. Must end with a slash as well as at ther server side.
+   * @returns response data from the server. This object will contain the returnCode, returnMessage, returnData and any other data that the server will return
+   */
+  async secureMoonlightRequest(_data = {}, targetVersion = 'v1/', extraHeaders = {}) {
+    try {
+      if (!_data.hasOwnProperty('SERVICE') || !_data.hasOwnProperty('ACTION')) {
+        throw new MoonLightError('You must provide both the SERVICE and ACTION in the data object');
+      }
+      const response = await this.posts(targetVersion, _data, extraHeaders);
+      const { data } = response;
+      const { returnCode, returnMessage } = data;
+      if (returnCode !== 0) {
+        throw new MoonLightError(returnMessage);
+      }
+      return data;
+    } catch (error: any) {
+      throw new MoonLightError(error);
+    }
+  }
 }
