@@ -104,11 +104,8 @@ export class Jet {
     return config;
   }
 
-  _setType(config: RequestInit, type: string | null) {
-    // set the request method
-    if (config && !('type' in config)) {
-      config.method = type?.toUpperCase();
-    }
+  _setType(config: RequestInit, type: string | undefined) {
+    config = { ...config, method: type };
     return config;
   }
 
@@ -149,10 +146,6 @@ export class Jet {
       this._setHeaders(config.headers);
     }
 
-    // set allowed origins, otherwise will default to all
-    // if (!('Access-Control-Allow-Origin' in this.headers) || 'cors' in config) {
-    //   this._setHeaders({ 'Access-Control-Allow-Origin': '*' });
-    // }
     // set the default content-type to application/json if non was provided
     if (!('Content-Type' in this.headers)) {
       this._setHeaders({ 'Content-Type': 'application/json' });
@@ -188,24 +181,23 @@ export class Jet {
     // set the body if the request is not get
     let newConfigs: RequestInit = {};
     if (body && type !== 'GET') {
-      newConfigs = { ...configs, ...this._setBody(body, configs) };
+      configs = { ...configs, body: JSON.stringify(body) };
     }
     // attach the headers
-    if (headers != null && configs) {
+    if (headers !== null && configs) {
       configs.headers = this._setHeaders(headers);
     }
 
-    newConfigs = { ...configs, ...this._setType(configs, type) };
+    newConfigs = {...configs, ...this._setType(configs, type)};
 
-    this._extractHeadersFromConfigs(newConfigs);
+    newConfigs = {...newConfigs, ...configs, ...this._extractHeadersFromConfigs(newConfigs) };
 
     if (secure) {
       // if it a secure request, attach the token
-      this.__attach_auth();
+      newConfigs = {...newConfigs, ...configs, ...this.__attach_auth() };
     }
 
-    newConfigs.headers = this.headers;
-    return configs;
+    return newConfigs;
   }
 
   _requestDefinition(
