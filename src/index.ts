@@ -17,7 +17,11 @@ interface Configuration {
   sendTokenAs?: string;
   defaultHeaders?: HeadersInit;
   cachable?: boolean;
+  moonlightSuccessCode?: number,
+  moonlightErrorhandler?: Function
 }
+
+class MoonLightError extends Error {}
 
 export class Jet {
   baseUrl: string | null;
@@ -27,6 +31,9 @@ export class Jet {
   interceptWithJWTAuth: boolean;
   headers: HeadersInit;
   cachable: boolean | undefined;
+  moonlightSuccessCode: number | undefined;
+  moonlightErrorhandler: Function | undefined;
+  internalErrorCode: number;
 
   constructor(options: Configuration) {
     // let configOptions = ÷{...configuration, ...options} // merge what the user sent with what we have, override defaults
@@ -37,6 +44,9 @@ export class Jet {
     this.interceptWithJWTAuth = options?.interceptWithJWTAuth || false;
     this.headers = options?.defaultHeaders || {};
     this.cachable = options?.cachable || true;
+    this.moonlightSuccessCode = options?.moonlightSuccessCode || 0;
+    this.moonlightErrorhandler = options?.moonlightErrorhandler || undefined;
+    this.internalErrorCode = this.moonlightSuccessCode ? this.moonlightSuccessCode + 1000 : 1000;
   }
 
   attachAuthorisation() {
@@ -188,13 +198,13 @@ export class Jet {
       configs.headers = this._setHeaders(headers);
     }
 
-    newConfigs = {...configs, ...this._setType(configs, type)};
+    newConfigs = { ...configs, ...this._setType(configs, type) };
 
-    newConfigs = {...newConfigs, ...configs, ...this._extractHeadersFromConfigs(newConfigs) };
+    newConfigs = { ...newConfigs, ...configs, ...this._extractHeadersFromConfigs(newConfigs) };
 
     if (secure) {
       // if it a secure request, attach the token
-      newConfigs = {...newConfigs, ...configs, ...this.__attach_auth() };
+      newConfigs = { ...newConfigs, ...configs, ...this.__attach_auth() };
     }
 
     return newConfigs;
@@ -433,16 +443,16 @@ export class Jet {
   /**
    * Helper for making requests that conform to the moonlight pattern.
    * Moonlight pattern does not require the user to provide the full url, but only the SERVICE and ACTION
-   * 
+   *
    * @example ```js
    * try {
-   *  const resData = await jet.moonlightRequest({ 
+   *  const resData = await jet.moonlightRequest({
    *      SERVICE: 'auth',
    *      ACTION: 'login',
    *      email: 'johndoe@somedomain.com',
    *      password: 'password'
    *  }, 'v1/');
-   * 
+   *
    *  console.log(resData); // { returnCode: 0, returnMessage: 'Logged in Successful', returnData: { token: 'somejwt' }, ...anyOtherData }
    * } catch (MoonLightError error) {
    *     toast.error(error);
@@ -453,22 +463,34 @@ export class Jet {
    * @param targetVersion The version of the api we are targetting. Defaults to v1/. Must end with a slash as well as at ther server side.
    * @returns response data from the server. This object will contain the returnCode, returnMessage, returnData and any other data that the server will return
    */
-  async moonlightRequest(_data = {}, targetVersion = 'v1/', extraHeaders = {}) {
+  async moonlightRequest(_data: object = {}, targetVersion: string | undefined = 'v1/', extraHeaders: HeadersInit | undefined = {}, _callback: Function | undefined = undefined) {
     try {
-      if (!_data.hasOwnProperty('SERVICE') || !_data.hasOwnProperty('ACTION')) {
-        throw new MoonLightError('You must provide both the SERVICE and ACTION in the data object');
+      const passedCheck = this.checkIfServiceAndActionArePresent(_data)
+        if (passedCheck !== true) {
+          return;
+        }
+        const response = await this.post(targetVersion, _data, extraHeaders);
+        const { data } = response;
+        const { returnCode, returnMessage } = data;
+        const successCode = this.moonlightSuccessCode || 0;
+        if (returnCode !== successCode) {
+          if (this.moonlightErrorhandler) {
+            return this.moonlightErrorhandler(data);
+          }
+          throw new MoonLightError(returnMessage, { cause: JSON.stringify(data) });
+        }
+        if (_callback) {
+          return _callback(data);
+        }
+        return data;
+      
+      } catch (error: any) {
+        if (this.moonlightErrorhandler) {
+          return this.moonlightErrorhandler({ returnMessage: error.message, returnCode: this.internalErrorCode });
+        }
+        throw new MoonLightError(error.message);
       }
-      const response = await this.post(targetVersion, _data, extraHeaders);
-      const { data } = response;
-      const { returnCode, returnMessage } = data;
-      if (returnCode !== 0) {
-        throw new MoonLightError(returnMessage);
-      }
-      return data;
-    } catch (error: any) {
-      throw new MoonLightError(error);
     }
-  }
 
   /**
    * Similar to moonlightRequest, but this one is secure, meaning it will attach the token to the request
@@ -476,20 +498,53 @@ export class Jet {
    * @param targetVersion The version of the api we are targetting. Defaults to v1/. Must end with a slash as well as at ther server side.
    * @returns response data from the server. This object will contain the returnCode, returnMessage, returnData and any other data that the server will return
    */
-  async secureMoonlightRequest(_data = {}, targetVersion = 'v1/', extraHeaders = {}) {
+  async secureMoonlightRequest(_data: object = {}, targetVersion: string | undefined = 'v1/', extraHeaders: HeadersInit | undefined = {}, _callback: Function | undefined = undefined) {
+  
     try {
-      if (!_data.hasOwnProperty('SERVICE') || !_data.hasOwnProperty('ACTION')) {
-        throw new MoonLightError('You must provide both the SERVICE and ACTION in the data object');
+        const passedCheck = this.checkIfServiceAndActionArePresent(_data)
+        if (passedCheck !== true) {
+          return;
+        }
+        const response = await this.posts(targetVersion, _data, extraHeaders);
+        const { data } = response;
+        const { returnCode, returnMessage } = data;
+        const successCode = this.moonlightSuccessCode || 0;
+        if (returnCode !== successCode) {
+          if (this.moonlightErrorhandler) {
+            return this.moonlightErrorhandler(data);
+          }
+          throw new MoonLightError(returnMessage, { cause: JSON.stringify(data) });
+        }
+        if (_callback) {
+          return _callback(data);
+        }
+        return data;
+      } catch (error: any) {
+        if (this.moonlightErrorhandler) {
+          return this.moonlightErrorhandler({ returnMessage: error.message, returnCode: this.internalErrorCode });
+        }
+        throw new MoonLightError(error.message);
       }
-      const response = await this.posts(targetVersion, _data, extraHeaders);
-      const { data } = response;
-      const { returnCode, returnMessage } = data;
-      if (returnCode !== 0) {
-        throw new MoonLightError(returnMessage);
-      }
-      return data;
-    } catch (error: any) {
-      throw new MoonLightError(error);
     }
+
+  checkIfServiceAndActionArePresent(_data: object) {
+    const keys = Object.keys(_data);
+    const hasService = keys.some((key) => key.toUpperCase() === 'SERVICE')
+    const hasAction = keys.some((key) => key.toUpperCase() === 'ACTION')
+    if (!hasService) {
+      if (this.moonlightErrorhandler) {
+        return this.moonlightErrorhandler({ returnMessage: 'Service was not defined in the request', returnCode: this.internalErrorCode });
+      }
+      throw new MoonLightError('Service was not defined in the request');
+    }
+
+    if (!hasAction) {
+      if (this.moonlightErrorhandler) {
+        return this.moonlightErrorhandler({ returnMessage: 'Action was not defined in the request', returnCode: this.internalErrorCode });
+      }
+      throw new MoonLightError('Action was not defined in the request');
+    }
+
+    return true;
   }
 }

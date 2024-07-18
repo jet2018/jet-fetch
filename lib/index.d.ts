@@ -17,6 +17,8 @@ interface Configuration {
     sendTokenAs?: string;
     defaultHeaders?: HeadersInit;
     cachable?: boolean;
+    moonlightSuccessCode?: number;
+    moonlightErrorhandler?: Function;
 }
 export declare class Jet {
     baseUrl: string | null;
@@ -26,6 +28,9 @@ export declare class Jet {
     interceptWithJWTAuth: boolean;
     headers: HeadersInit;
     cachable: boolean | undefined;
+    moonlightSuccessCode: number | undefined;
+    moonlightErrorhandler: Function | undefined;
+    internalErrorCode: number;
     constructor(options: Configuration);
     attachAuthorisation(): {
         Authorization: string;
@@ -914,13 +919,14 @@ export declare class Jet {
      * @param targetVersion The version of the api we are targetting. Defaults to v1/. Must end with a slash as well as at ther server side.
      * @returns response data from the server. This object will contain the returnCode, returnMessage, returnData and any other data that the server will return
      */
-    moonlightRequest(_data?: {}, targetVersion?: string, extraHeaders?: {}): Promise<any>;
+    moonlightRequest(_data?: object, targetVersion?: string | undefined, extraHeaders?: HeadersInit | undefined, _callback?: Function | undefined): Promise<any>;
     /**
      * Similar to moonlightRequest, but this one is secure, meaning it will attach the token to the request
      * @param _data the data we are sending to the server, including both the SERVICE and ACTION
      * @param targetVersion The version of the api we are targetting. Defaults to v1/. Must end with a slash as well as at ther server side.
      * @returns response data from the server. This object will contain the returnCode, returnMessage, returnData and any other data that the server will return
      */
-    secureMoonlightRequest(_data?: {}, targetVersion?: string, extraHeaders?: {}): Promise<any>;
+    secureMoonlightRequest(_data?: object, targetVersion?: string | undefined, extraHeaders?: HeadersInit | undefined, _callback?: Function | undefined): Promise<any>;
+    checkIfServiceAndActionArePresent(_data: object): any;
 }
 export {};
