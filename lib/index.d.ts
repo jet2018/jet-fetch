@@ -50,9 +50,9 @@ export declare class Jet {
     isEmpty(obj: object): boolean;
     /**
      * Sets the body part of the request
-     * @param {object} body-> Request body
-     * @param {object} config-> Request configurations
      * @returns Object -> Configuration with body combined
+     * @param body
+     * @param config
      */
     _setBody(body?: object, config?: RequestInit): RequestInit | undefined;
     _setType(config: RequestInit, type: string | undefined): RequestInit;
@@ -917,6 +917,8 @@ export declare class Jet {
      * @see [Moonlight Pattern](https://pionia.netlify.app/moonlight/introduction-to-moonlight-architecture/)
      * @param _data the data we are sending to the server, including both the SERVICE and ACTION
      * @param targetVersion The version of the api we are targetting. Defaults to v1/. Must end with a slash as well as at ther server side.
+     * @param extraHeaders
+     * @param _callback
      * @returns response data from the server. This object will contain the returnCode, returnMessage, returnData and any other data that the server will return
      */
     moonlightRequest(_data?: object, targetVersion?: string | undefined, extraHeaders?: HeadersInit | undefined, _callback?: Function | undefined): Promise<any>;
@@ -924,9 +926,11 @@ export declare class Jet {
      * Similar to moonlightRequest, but this one is secure, meaning it will attach the token to the request
      * @param _data the data we are sending to the server, including both the SERVICE and ACTION
      * @param targetVersion The version of the api we are targetting. Defaults to v1/. Must end with a slash as well as at ther server side.
+     * @param extraHeaders
+     * @param _callback
      * @returns response data from the server. This object will contain the returnCode, returnMessage, returnData and any other data that the server will return
      */
     secureMoonlightRequest(_data?: object, targetVersion?: string | undefined, extraHeaders?: HeadersInit | undefined, _callback?: Function | undefined): Promise<any>;
-    checkIfServiceAndActionArePresent(_data: object): any;
+    autoDetectServiceAndAction(_data: object): any;
 }
 export {};

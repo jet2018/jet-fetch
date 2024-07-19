@@ -356,17 +356,176 @@ jet.custom(url, type, body, headers, configs, secure);
 
 Note: The new param `secure` added to make a custom request that will actually check for the token. Pass this as true, omit it or pass it as false to omit checking.
 
+### Moonlight Pattern Developers.
+
+If you're using Moonlight powered backend, the following assumptions are made.
+1. The backend will always define a `returnCode`. 
+2. By default, this the `returnCode` will be 0.
+3. The Server will always return a `returnMessage` which will be a string or null.
+4. The Server will always return a `returnData` object which will be an object or null.
+5. All requests that hit your backend will return a 200 OK status code.
+6. Each request will define both the service and action or SERVICE and ACTION in the request body. 
+7. The backend will always return a `returnCode` which will be a number.
+8. All requests are `POST` or `GET` requests.
+9. Get requests are only meant to check the api availability, take no data and return a 200 OK status code.
+10. Everything is pointing to the same endpoint.
+
+Assuming your api runs on http://localhost:8000/api/:-
+
+You can initialise your Jet instance like this:-
+
+```js
+import { Jet } from 'jet-fetch';
+const jet = new Jet({
+  baseUrl: 'http://localhost:8000/api/'
+});
+```
+
+To check the availability of your api, you can run:-
+```js
+const res = await jet.checkPioniaStatusForVersion('v1/');
+```
+
+To make a request to your backend, you can run:-
+
+```js
+try {
+  const res = await jet.moonlightRequest({ service: 'yourService', action: 'yourAction', ...anyOtherData });
+} catch (error: MoonlightError) {
+  console.log(error.message);
+}
+```
+
+For details about this, you can check the cause of the exception in the `error.cause` property.
+```js
+console.log(JSON.parse(error.cause));
+```
+
+It will look like this:-
+ ```ts
+ {
+ returnCode: number,
+ returnMessage: string,
+ ...anyOtherData
+ }
+ ```
+
+You can then throw the error to the user or handle it in any way you want.
+
+## Customization.
+
+This method is fully customisable and you can define your own way of handling the requests.
+
+### Defining custom error handler.
+
+In normal cases, the helper above will just throw an error, but you can define your own error handler.
+
+```js
+import { Jet } from 'jet-fetch';
+const jet = new Jet({
+  baseUrl: 'http://localhost:8000/api/', 
+  moonlightErrorhandler: (error) => { // not this is a callback
+    console.log(error);
+  }
+});
+```
+We will pass the error to this handler and the exception won't be thrown at all.
+
+### Overriding the custom success code.
+
+In moonlight, the success code is 0, but you can override this by defining your own success code.
+
+```js
+import { Jet } from 'jet-fetch';
+const jet = new Jet({
+  baseUrl: 'http://localhost:8000/api/',
+  moonlightSuccessCode: 200 // not this is a number
+});
+```
+
+### Overriding internal error code.
+
+Using this helper, when an error is raised before the request say when there is no internet connection or the server 
+is unreachable, the library will throw an error with a cause that defines a `returnCode` that is equivalent to 
+`moonlightSuccessCode + 1000`. This implies that the default value of `moonlightSuccessCode` is 0, therefore the
+default value of the internal error code is 1000, if you change it to 200, then the internal error code will be 1200.
+
+However, you can define the code to be anything you want on the class instantiation.
+```js
+import { Jet } from 'jet-fetch';
+const jet = new Jet({
+  baseUrl: 'http://localhost:8000/api/',
+   internalErrorCode: 500 // not this is a number
+});
+```
+Note that this won't affect the request that fail from the server as these already define their own `returnCode`.
+
+### Overriding the default api version targeted.
+
+By default, the helper targets version 1 as `v1/`, but you can override this by defining your own version.
+
+```js
+import { Jet } from 'jet-fetch';
+const jet = new Jet({
+  baseUrl: 'http://localhost:8000/api/',
+});
+
+const res = await jet.moonlightRequest({ service: 'yourService', action: 'yourAction', ...anyOtherData }, 'v2/');
+```
+
+### Attaching extra headers to the request.
+
+However much this can done on the class instance as already discussed above, you can also do it on the request level
+by defining the 3rd parameter of the `moonlightRequest` method.
+
+```js
+const res = await jet.moonlightRequest({ service: 'yourService', action: 'yourAction', ...anyOtherData }, 'v2/', { 'Content-Type': 'application/json' });
+```
+
+## Response Subscription.
+
+In normal circumstances, the response is returned as a promise, but you can also subscribe to the response by defining the 
+callback which will be called immediately the response is obtained as the 4th parameter of the `moonlightRequest` method.
+
+```js
+const res = await jet.moonlightRequest({ service: 'yourService', action: 'yourAction', ...anyOtherData }, 'v2/', { 'Content-Type': 'application/json' }, (res) => {
+        setState(res?.returnData) // you can do anything with the response here.
+      });
+```
+
+We shall pass the response `data` to this callback.
+
+## Securing Moonlight Requests.
+
+If you are using this package, they already know that it auto attaches the authentication token to the request. Usually
+this is done by calling same method as the normal request but with an `s` at the end. 
+
+However with moonlight, you can secure your request by calling the `secureMoonlightRequest` method.
+
+secureMoonlightRequest takes the same parameters as the `moonlightRequest` method but with the ability to attach the token.
+```js
+const res = await jet.secureMoonlightRequest({ service: 'yourService', action: 'yourAction', ...anyOtherData }, 'v2/', { 'Content-Type': 'application/json' }, (res) => {
+        setState(res?.returnData) // you can do anything with the response here.
+      });
+```
+
+If you're using the [Pionia Framework](https://pionia.netlify.app) or any other framework that uses the `Moonlight` pattern, then the last part of this package is for you.
+
 ## Tests.
 
 From version 1.1.2, Jest-powered tests were added to the package and to run them, just run :-
 
 ```shell
-npm test
+yarn test
+```
+or 
+```shell
+npm run test
 ```
 
 Good luck with the new way of having fun with `APIs`.
 
-Most of the scenarios are summarised in 5 tests, which by end will have run every single line of the package thus being bug-free.
+Most of the scenarios are summarised in 7 tests, which by end will have run every single line of the package thus being bug-free.
 
 ## Contributing
 

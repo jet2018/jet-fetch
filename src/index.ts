@@ -18,11 +18,13 @@ interface Configuration {
   defaultHeaders?: HeadersInit;
   cachable?: boolean;
   moonlightSuccessCode?: number,
+  // tslint:disable-next-line:ban-types
   moonlightErrorhandler?: Function
 }
 
 class MoonLightError extends Error {}
 
+// tslint:disable-next-line:max-classes-per-file
 export class Jet {
   baseUrl: string | null;
   token: any;
@@ -32,6 +34,7 @@ export class Jet {
   headers: HeadersInit;
   cachable: boolean | undefined;
   moonlightSuccessCode: number | undefined;
+  // tslint:disable-next-line:ban-types
   moonlightErrorhandler: Function | undefined;
   internalErrorCode: number;
 
@@ -103,9 +106,9 @@ export class Jet {
 
   /**
    * Sets the body part of the request
-   * @param {object} body-> Request body
-   * @param {object} config-> Request configurations
    * @returns Object -> Configuration with body combined
+   * @param body
+   * @param config
    */
   _setBody(body?: object, config?: RequestInit) {
     if (body && config) {
@@ -187,7 +190,7 @@ export class Jet {
    * @param {string} type Request type, that is, post, get, put ...
    * @returns Object
    */
-  _populateData(type = 'GET', body?: any, headers?: any, configs?: any, secure = false) {
+  _populateData(type: string = 'GET', body?: any, headers?: any, configs?: any, secure = false) {
     // set the body if the request is not get
     let newConfigs: RequestInit = {};
     if (body && type !== 'GET') {
@@ -423,7 +426,7 @@ export class Jet {
     body?: object | null,
     headers?: HeadersInit | undefined,
     config?: RequestInit | undefined,
-    secure = false,
+    secure: boolean = false,
   ) {
     const { newUrl, data } = this._requestDefinition(url, type, body, headers, config, secure);
     try {
@@ -461,11 +464,14 @@ export class Jet {
    * @see [Moonlight Pattern](https://pionia.netlify.app/moonlight/introduction-to-moonlight-architecture/)
    * @param _data the data we are sending to the server, including both the SERVICE and ACTION
    * @param targetVersion The version of the api we are targetting. Defaults to v1/. Must end with a slash as well as at ther server side.
+   * @param extraHeaders
+   * @param _callback
    * @returns response data from the server. This object will contain the returnCode, returnMessage, returnData and any other data that the server will return
    */
+  // tslint:disable-next-line:no-unnecessary-initializer ban-types
   async moonlightRequest(_data: object = {}, targetVersion: string | undefined = 'v1/', extraHeaders: HeadersInit | undefined = {}, _callback: Function | undefined = undefined) {
     try {
-      const passedCheck = this.checkIfServiceAndActionArePresent(_data)
+      const passedCheck = this.autoDetectServiceAndAction(_data)
         if (passedCheck !== true) {
           return;
         }
@@ -483,7 +489,7 @@ export class Jet {
           return _callback(data);
         }
         return data;
-      
+
       } catch (error: any) {
         if (this.moonlightErrorhandler) {
           return this.moonlightErrorhandler({ returnMessage: error.message, returnCode: this.internalErrorCode });
@@ -496,12 +502,15 @@ export class Jet {
    * Similar to moonlightRequest, but this one is secure, meaning it will attach the token to the request
    * @param _data the data we are sending to the server, including both the SERVICE and ACTION
    * @param targetVersion The version of the api we are targetting. Defaults to v1/. Must end with a slash as well as at ther server side.
+   * @param extraHeaders
+   * @param _callback
    * @returns response data from the server. This object will contain the returnCode, returnMessage, returnData and any other data that the server will return
    */
+  // tslint:disable-next-line:no-unnecessary-initializer ban-types
   async secureMoonlightRequest(_data: object = {}, targetVersion: string | undefined = 'v1/', extraHeaders: HeadersInit | undefined = {}, _callback: Function | undefined = undefined) {
-  
+
     try {
-        const passedCheck = this.checkIfServiceAndActionArePresent(_data)
+        const passedCheck = this.autoDetectServiceAndAction(_data)
         if (passedCheck !== true) {
           return;
         }
@@ -527,7 +536,7 @@ export class Jet {
       }
     }
 
-  checkIfServiceAndActionArePresent(_data: object) {
+  autoDetectServiceAndAction(_data: object) {
     const keys = Object.keys(_data);
     const hasService = keys.some((key) => key.toUpperCase() === 'SERVICE')
     const hasAction = keys.some((key) => key.toUpperCase() === 'ACTION')

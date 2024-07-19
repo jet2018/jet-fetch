@@ -1,4 +1,3 @@
-import { Configuration } from 'tslint';
 import { Jet } from '../index';
 const jet = new Jet({ baseUrl: 'https://jsonplaceholder.typicode.com/' });
 
@@ -7,27 +6,28 @@ test('headers', () => {
 });
 
 test('get', () => {
-  expect(jet.get('todos/1')).toBeInstanceOf(Promise<{ res: Object; response: Object }>);
+  expect(jet.get('todos/1')).toBeInstanceOf(Promise<{ res: object; response: object }>);
 });
 
 test('post request', () => {
-  let body = {
+  const body = {
     title: 'foo',
     body: 'bar',
     userId: 1,
   };
   const resp = jet.post('todos/1', body);
-  expect(resp).toBeInstanceOf(Promise<{ res: Object; response: Object }>);
+  expect(resp).toBeInstanceOf(Promise<{ res: object; response: object }>);
 });
 
 test('post request secured', () => {
   jet.token = 'thisismytesttokenthathastobeattachedintheheadersoftherequest';
-  let body = {
+  jet.interceptWithJWTAuth = true;
+  const body = {
     title: 'foo',
     body: 'bar',
     userId: 1,
   };
-  expect(jet.posts('posts/', body)).toBeInstanceOf(Promise<{ res: Object; response: Object }>);
+  expect(jet.posts("/todos/1", body)).toBeInstanceOf(Promise<{ res: object; response: object }>);
 });
 
 /**
@@ -35,8 +35,17 @@ test('post request secured', () => {
  */
 test('token is attached', () => {
   jet.token = 'mysampletokenhere';
-  expect(jet.attachAuthorisation()).toBeInstanceOf(Object);
+
+  expect(jet.attachAuthorisation()).toBeInstanceOf(Object)
   expect(jet.token).toBeDefined();
+});
+
+
+/**
+ * test if given a token, it gets added to the headers
+ */
+test('token header attaches', () => {
+  expect(jet.generateAuthHeader("mysampletokenhere")).toBeInstanceOf(Object);
 });
 
 /**
