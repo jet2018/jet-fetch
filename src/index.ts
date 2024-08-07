@@ -37,6 +37,7 @@ export class Jet {
   // tslint:disable-next-line:ban-types
   moonlightErrorhandler: Function | undefined;
   internalErrorCode: number;
+  request: object | undefined;
 
   constructor(options: Configuration) {
     // let configOptions = ÷{...configuration, ...options} // merge what the user sent with what we have, override defaults
@@ -58,7 +59,6 @@ export class Jet {
     if (token) {
       return this.generateAuthHeader(this.token);
     }
-
     return null;
   }
 
@@ -170,9 +170,8 @@ export class Jet {
   __attach_auth() {
     if (this.interceptWithJWTAuth) {
       const auth = this.attachAuthorisation();
-      // if it has something from auth, lets use it
-      if (auth && !('Authorization' in this.headers)) {
-        this._setHeaders({ Authorization: auth?.Authorization });
+      if (auth) {
+        this.headers = { ...this.headers, ...auth };
       }
     }
 
@@ -207,10 +206,10 @@ export class Jet {
 
     if (secure) {
       // if it a secure request, attach the token
-      newConfigs = { ...newConfigs, ...configs, ...this.__attach_auth() };
+      newConfigs = { ...newConfigs, ...this.__attach_auth() };
     }
 
-    return newConfigs;
+    return { ...newConfigs };
   }
 
   _requestDefinition(
