@@ -31,6 +31,7 @@ export declare class Jet {
     moonlightSuccessCode: number | undefined;
     moonlightErrorhandler: Function | undefined;
     internalErrorCode: number;
+    request: object | undefined;
     constructor(options: Configuration);
     attachAuthorisation(): {
         Authorization: string;
@@ -744,10 +745,38 @@ export declare class Jet {
      * @param {string} type Request type, that is, post, get, put ...
      * @returns Object
      */
-    _populateData(type?: string, body?: any, headers?: any, configs?: any, secure?: boolean): RequestInit;
+    _populateData(type?: string, body?: any, headers?: any, configs?: any, secure?: boolean): {
+        body?: BodyInit | null | undefined;
+        cache?: RequestCache | undefined;
+        credentials?: RequestCredentials | undefined;
+        headers?: HeadersInit | undefined;
+        integrity?: string | undefined;
+        keepalive?: boolean | undefined;
+        method?: string | undefined;
+        mode?: RequestMode | undefined;
+        redirect?: RequestRedirect | undefined;
+        referrer?: string | undefined;
+        referrerPolicy?: ReferrerPolicy | undefined;
+        signal?: AbortSignal | null | undefined;
+        window?: null | undefined;
+    };
     _requestDefinition(url: string | undefined, type: string | undefined, body: any, headers: any, config: any, secure?: boolean): {
         newUrl: string | undefined;
-        data: RequestInit;
+        data: {
+            body?: BodyInit | null | undefined;
+            cache?: RequestCache | undefined;
+            credentials?: RequestCredentials | undefined;
+            headers?: HeadersInit | undefined;
+            integrity?: string | undefined;
+            keepalive?: boolean | undefined;
+            method?: string | undefined;
+            mode?: RequestMode | undefined;
+            redirect?: RequestRedirect | undefined;
+            referrer?: string | undefined;
+            referrerPolicy?: ReferrerPolicy | undefined;
+            signal?: AbortSignal | null | undefined;
+            window?: null | undefined;
+        };
     };
     /**
      * Makes a GET request to the server
